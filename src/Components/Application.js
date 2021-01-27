@@ -2,23 +2,23 @@ import React, { useContext } from "react";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
 import Header from "./Header"
-import UserProvider from "../Providers/UserProvider";
-import { UserContext } from "../Providers/UserProvider";
 import PasswordReset from "./PasswordReset";
 import Navbar from "./Navbar"
 import Dashboard from "./Dashboard"
-import AddBuilding from './AddBuilding'
 import AddUnit from './AddUnit'
+import { useAuthState } from '../Context'
 import {
   BrowserRouter as Router,
   Route,
   Redirect,
 } from "react-router-dom";
+import Leads from './Leads'
 
 function Application() {
-  const user = useContext(UserContext);
+  const user = useAuthState();
+  console.log(user.user)
   return (
-        user ?
+        (user.user) ?
         <Router>
           <Navbar/>
           <Header/>
@@ -32,11 +32,17 @@ function Application() {
               <Redirect to="/dashboard" />
           </Route>
           <Route path = "/dashboard" exact component = {Dashboard}/>
+          <Route path = "/leads" exact component = {Leads}/>
         </Router>
         :
         <Router>
           <Route path = "/" exact component = {SignIn} />
+          <Route path = "/Enquire" exact component = {SignUp}/>
+          <Route exact path="/dashboard">
+              <Redirect to="/" />
+          </Route>
         </Router>
+
 
   )
 }

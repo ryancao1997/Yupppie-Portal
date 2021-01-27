@@ -1,10 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import { makeStyles } from '@material-ui/core/styles';
 import { Button } from '@material-ui/core';
-import { UserContext } from "../Providers/UserProvider";
-import {auth} from "../firebase"
 import { Link } from "@material-ui/core";
-import {firestore, storage} from "../firebase"
 import Container from '@material-ui/core/Container';
 import Typography from '@material-ui/core/Typography';
 import BuildingTable from "./BuildingTable"
@@ -17,6 +14,9 @@ import InputAdornment from "@material-ui/core/InputAdornment";
 import SearchIcon from "@material-ui/icons/Search";
 import TextField from '@material-ui/core/TextField';
 import Switch from '@material-ui/core/Switch';
+import axios from 'axios';
+import { useAuthState } from '../Context'
+
 
 const useStyles = makeStyles((theme) => ({
   link: {
@@ -44,16 +44,16 @@ const useStyles = makeStyles((theme) => ({
 }))
 
 function Dashboard() {
-  const user = useContext(UserContext);
+  const user = useAuthState();
   const classes = useStyles();
-  const [companyName, setCompanyName] = useState(user.companyName)
+  const [companyName, setCompanyName] = useState("test")
   const [buildings, setBuildings] = useState([])
   const [photoChange, setPhotoChange] = useState([])
   const [open, setOpen] = React.useState(false);
   const [listView, setListView] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
   const dynamicSearch = () => {
-    return buildings.filter(building => building.buildingName.toLowerCase().includes(searchTerm.toLowerCase()))
+    return buildings.filter(building => building.name.toLowerCase().includes(searchTerm.toLowerCase()))
   }
   const handleClickOpen = () => {
     setOpen(true);
@@ -65,22 +65,17 @@ function Dashboard() {
     setOpen(false);
   };
   useEffect(() => {
-      if (!companyName){
-        firestore.collection("users").where('email', '==', user.email).get().then(snapshot => {
-          const data = snapshot.docs.map(doc => doc.data());
-          console.log(data)
-          setCompanyName(data[0].companyName)
-        })
-      }
-      const buildingRef = firestore.collection("buildings")
-      try {
-          buildingRef.where('companyName', '==', companyName).get().then(snapshot => {
-          const data = snapshot.docs.map(doc => doc.data());
-          setBuildings(data)
-        })
-      } catch (error) {
-        setBuildings([]);
-      }
+      let link = `http://18.218.78.71:8080/buildings`
+      axios.get(link, { headers: {
+        'Authorization': `Bearer ${user.token}`
+      }})
+      .then(res => {
+        console.log(res.data.data)
+        setBuildings(res.data.data)})
+      .catch(err => {
+        console.log(err)
+        setBuildings([])
+      })
   },[listView, photoChange]);
   console.log(buildings)
   function handleNewBuilding(newBuilding) {
@@ -92,7 +87,13 @@ function Dashboard() {
     setPhotoChange(urls)
   }
   function handleDeleteBuilding(id) {
-    firestore.collection("buildings").doc(id).delete()
+    let link = `http://18.218.78.71:8080/buildings/${id}`
+    axios.delete(link,{ headers: {
+        'Authorization': `Bearer ${user.token}`
+      }})
+    .then(res =>
+        console.log(res.data)
+        )
     let newBuildings = []
     var building
     for (building of buildings) {
@@ -116,7 +117,7 @@ function Dashboard() {
           <Button className = {classes.button} variant="contained" color="primary" onClick={handleClickOpen}>
             <AddIcon /> <div className={classes.font}>Add Building</div>
           </Button>
-          <AddBuildingDialog companyName = {companyName} open={open} onClose={handleClose} onSubmit={handleNewBuilding}/>
+          <AddBuildingDialog propertyManager = {user} open={open} onClose={handleClose} onSubmit={handleNewBuilding}/>
       </Grid>
       <Grid container item xs={12} spacing={1} alignItems="stretch">
       <TextField

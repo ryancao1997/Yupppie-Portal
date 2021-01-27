@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import {auth} from "../firebase"
-import {generateUserDocument} from "../firebase"
 import Button from '@material-ui/core/Button';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import TextField from '@material-ui/core/TextField';
@@ -10,6 +8,11 @@ import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
 import Alert from '@material-ui/lab/Alert';
+import axios from 'axios';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
+import InputLabel from '@material-ui/core/InputLabel';
+import FormControl from '@material-ui/core/FormControl';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -19,6 +22,10 @@ const useStyles = makeStyles((theme) => ({
     marginBottom:-100,
     marginTop: -30
   },
+  small: {
+          width: '100%'
+
+        },
   paper: {
     marginTop: theme.spacing(8),
     display: 'flex',
@@ -38,20 +45,36 @@ const useStyles = makeStyles((theme) => ({
 const SignUp = () => {
   const classes = useStyles();
   const [email, setEmail] = useState("");
-  const [firstName, setfirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [password, setPassword] = useState("");
+  const [backendService, setBackendService] = useState("");
+  const [numUnits, setNumUnits] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [companyWebsite, setCompanyWebsite] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [emailHasBeenSent, setEmailHasBeenSent] = useState(false);
   const [error, setError] = useState(null);
-  const createUserWithEmailAndPasswordHandler = async (event, email, password) => {
+  const sendEmail = async (email,companyName, phoneNumber) => {
       event.preventDefault();
       try{
-        const {user} = await auth.createUserWithEmailAndPassword(email, password);
-        generateUserDocument(user, {companyName, fullName, phoneNumber});
+        let payload = {
+          companyName: companyName,
+          phone: phoneNumber,
+          email: email,
+          companyWebsite: companyWebsite,
+          unitsManaged: numUnits,
+          managementSoftware: backendService
+        }
+        console.log(payload)
+        axios.post(`http://18.218.78.71:8080/contact`,payload)
+        .then(res => {
+          console.log("success")
+        })
+        .catch(error => {
+            console.log(error)
+          });
+        setEmailHasBeenSent(true)
       }
       catch(error){
-        setError('Error signing up. Make sure inputs are valid');
+        setError('Error. Make sure inputs are valid');
       }
 
     };
@@ -59,16 +82,14 @@ const SignUp = () => {
     const { name, value } = event.currentTarget;
     if (name === "userEmail") {
       setEmail(value);
-    } else if (name === "userPassword") {
-      setPassword(value);
+    } else if (name === "companyWebsite") {
+      setCompanyWebsite(value);
     } else if (name === "companyName") {
       setCompanyName(value);
-    } else if (name === "firstName") {
-      setFullName(value);
     } else if (name === "phoneNumber") {
       setPhoneNumber(value);
-    } else if (name === "lastName") {
-      setLastName(value);
+    } else if (name === "numUnits") {
+      setNumUnits(value);
     }
   };
   return (
@@ -80,39 +101,12 @@ const SignUp = () => {
       <CssBaseline />
       <div className={classes.paper}>
         <Typography component="h1" variant="h5">
-          Sign Up
+          List with Yuppie.
         </Typography>
         {error !== null && <Alert severity="error" onClose={() => {setError(null)}}>{error}</Alert>}
+        {emailHasBeenSent && <Alert severity="success" onClose={() => {setEmailHasBeenSent(false)}}>We will reach out to you shortly.</Alert>}
         <form className={classes.form} noValidate>
           <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <TextField
-                autoComplete="firstName"
-                name="firstName"
-                variant="outlined"
-                required
-                fullWidth
-                id="firstName"
-                label="First Name"
-                value = {firstName}
-                onChange = {(event) => onChangeHandler(event)}
-                autoFocus
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                autoComplete="lastName"
-                name="lastName"
-                variant="outlined"
-                required
-                fullWidth
-                id="lastName"
-                label="Last Name"
-                value = {lastName}
-                onChange = {(event) => onChangeHandler(event)}
-                autoFocus
-              />
-            </Grid>
             <Grid item xs={12}>
               <TextField
                 autoComplete="companyName"
@@ -124,21 +118,19 @@ const SignUp = () => {
                 label="Company Name"
                 value = {companyName}
                 onChange = {(event) => onChangeHandler(event)}
-                autoFocus
               />
             </Grid>
             <Grid item xs={12}>
               <TextField
-                autoComplete="phoneNumber"
-                name="phoneNumber"
+                autoComplete="companyWebsite"
+                name="companyWebsite"
                 variant="outlined"
                 required
                 fullWidth
-                id="phoneNumber"
-                label="Phone Number"
-                value = {phoneNumber}
+                id="companyWebsite"
+                label="Company Website"
+                value = {companyWebsite}
                 onChange = {(event) => onChangeHandler(event)}
-                autoFocus
               />
             </Grid>
             <Grid item xs={12}>
@@ -156,17 +148,50 @@ const SignUp = () => {
             </Grid>
             <Grid item xs={12}>
               <TextField
+                autoComplete="phoneNumber"
+                name="phoneNumber"
                 variant="outlined"
                 required
                 fullWidth
-                name="userPassword"
-                label="Password"
-                type="password"
-                id="userPassword"
-                autoComplete="current-password"
-                value = {password}
+                id="phoneNumber"
+                label="Phone Number"
+                value = {phoneNumber}
                 onChange = {(event) => onChangeHandler(event)}
               />
+            </Grid>
+            <Grid item xs={5}>
+              <TextField
+                autoComplete="numUnits"
+                name="numUnits"
+                variant="outlined"
+                required
+                type = "number"
+                fullWidth
+                id="numUnits"
+                label="Units Managed"
+                value = {numUnits}
+                onChange = {(event) => onChangeHandler(event)}
+              />
+            </Grid>
+            <Grid item xs={7}>
+            <FormControl className = {classes.small} variant="outlined" required>
+              <InputLabel id="managementSoftware">Management Software</InputLabel>
+              <Select
+                value = {backendService}
+                name= "backendService"
+                labelId="managementSoftware"
+                label="Management Software"
+                onChange={(value) => setBackendService(value.target.value)}
+              >
+                <MenuItem value="" disabled>
+                  Management Software
+                </MenuItem>
+                <MenuItem value={"Yardi"}>Yardi</MenuItem>
+                <MenuItem value={"RealPage"}>RealPage</MenuItem>
+                <MenuItem value={"AppFolio"}>AppFolio</MenuItem>
+                <MenuItem value={""}>None</MenuItem>
+              </Select>
+            </FormControl>
             </Grid>
           </Grid>
           <Button
@@ -176,10 +201,10 @@ const SignUp = () => {
             color="primary"
             className={classes.submit}
             onClick={event => {
-              createUserWithEmailAndPasswordHandler(event, email, password);
+              sendEmail(email, companyName, phoneNumber);
             }}
           >
-            Sign Up
+            Enquire
           </Button>
           <Grid container justify="flex-end">
             <Grid item>

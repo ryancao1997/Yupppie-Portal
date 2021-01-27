@@ -21,11 +21,12 @@ import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Grid from '@material-ui/core/Grid';
-import {firestore, storage} from "../firebase"
 import Carousel from 'nuka-carousel'
 import DeleteIcon from '@material-ui/icons/Delete';
 import AddIcon from '@material-ui/icons/Add';
 import EditBuildingDialog from './EditBuildingDialog'
+import FloorplanDialog from './FloorplanDialog'
+import axios from 'axios';
 
 const useStyles = makeStyles((theme) => ({
   description: {
@@ -55,7 +56,10 @@ const useStyles = makeStyles((theme) => ({
     transform: 'rotate(180deg)',
   },
   table: {
-    marginLeft: -10,
+    marginLeft: -0
+  },
+  tableCell: {
+    fontSize: 9.5
   }
 }));
 
@@ -63,6 +67,16 @@ const useStyles = makeStyles((theme) => ({
 export default function BuildingCard(props) {
   const classes = useStyles();
   const [open, setOpen] = React.useState(false);
+  const [floorplanOpen, setFloorplanOpen] = React.useState(false);
+  const [floorplanApartment, setFloorplanApartment] = React.useState([]);
+  const handleFloorplanOpen = (apartment) => {
+    setFloorplanOpen(true);
+    console.log(apartment)
+    setFloorplanApartment(apartment)
+  };
+  const handleFloorplanClose = () => {
+    setFloorplanOpen(false);
+  };
   const handleClickOpen = () => {
     setOpen(true);
   };
@@ -71,32 +85,30 @@ export default function BuildingCard(props) {
   };
   const { onDelete, building, companyName, onPhotoChange } = props
   const [description, setDescription] = React.useState(building.description);
-  const [buildingName, setBuildingName] = React.useState(building.buildingName);
-  const [address, setAddress] = React.useState(building.address);
+  const [buildingName, setBuildingName] = React.useState(building.name);
+  const [address, setAddress] = React.useState(`${building.address.streetAddress}, ${building.address.city}, ${building.address.state}, ${building.address.zipCode}`);
   const [amenities, setAmenities] = React.useState(building.amenities);
-  const [photoUrls, setPhotoUrls] = React.useState(building.photoUrls);
+  const [photoUrls, setPhotoUrls] = React.useState(building.images);
   const [expanded, setExpanded] = React.useState(false);
-  const [units, setUnits] = useState([])
+  const [units, setUnits] = React.useState(building.units)
   const handleExpandClick = () => {
     setExpanded(!expanded);
   };
   useEffect(() => {
       setDescription(building.description)
-      setBuildingName(building.buildingName)
-      setAddress(building.address)
+      setBuildingName(building.name)
+      setAddress(`${building.address.streetAddress}, ${building.address.city}, ${building.address.state}, ${building.address.zipCode}`)
       setAmenities(building.amenities)
-      const unitRef = firestore.collection("buildings").doc(building.id).collection("units")
-      unitRef.get().then(snapshot => {
-        const data = snapshot.docs.map(doc => doc.data());
-        setUnits(data)
-      })
-  },[building]);
+      setUnits(building.units)
+      setPhotoUrls(building.images)
+      console.log(building)
+  },[building.name]);
   function handlePhotoEdits(urls) {
     setPhotoUrls(urls)
     onPhotoChange(urls)
   }
   try {
-    var date = building.lastEdited.toDate()
+    var date = new Date()
   } catch {
     var date = building.lastEdited
   }
@@ -106,13 +118,11 @@ export default function BuildingCard(props) {
   var lastEditedString = 'Last Edited: ' + yyyy + '-' + mm + '-' + dd;
   function handleEdits(edits,initialIds) {
     setDescription(edits.description)
-    setBuildingName(edits.buildingName)
-    let uploadAddress = edits.streetAddress+', '+edits.city+', '+ edits.state+', '+ edits.zip
+    setBuildingName(edits.name)
+    let uploadAddress = edits.streetAddress+', '+edits.city+', '+ edits.state+', '+ edits.zipCode
     setAddress(uploadAddress)
     setAmenities(edits.amenities)
     setUnits(edits.units)
-    console.log(edits.units)
-    console.log(initialIds)
     var currentIds = []
     var y
     for (y of edits.units){
@@ -120,9 +130,7 @@ export default function BuildingCard(props) {
     }
     var x
     for (x of initialIds){
-      console.log(currentIds)
       if (!currentIds.includes(x)){
-        firestore.collection("buildings").doc(building.id).collection("units").doc(x).delete()
       }
     }
   }
@@ -143,20 +151,19 @@ export default function BuildingCard(props) {
                 }
       />
       <Carousel defaultControlsConfig={{nextButtonText:'>',prevButtonText:'<', nextButtonStyle: {opacity: 0.5}, prevButtonStyle: {opacity: 0.5}}}>
-          {photoUrls.map((url) => (
+          {photoUrls.map((image) => (
               <CardMedia
                 className={classes.media}
-                image={url}
+                image={image}
                 title={building.buildingName}
               />
             ))}
       </Carousel>
       <CardContent>
         <Typography variant="body2" color="textSecondary" component="p">
-        {lastEditedString}
         </Typography>
       </CardContent>
-      <EditBuildingDialog address = {address} buildingName = {buildingName} amenities = {amenities} units = {units} building={building} description ={description} open={open} onClose={handleClose} onSubmit={handleEdits} onDelete={onDelete} companyName={companyName} initialUrls={photoUrls} onPhotoEdit={handlePhotoEdits}/>
+      <EditBuildingDialog address = {building.address} buildingName = {buildingName} amenities = {amenities} units = {units} building={building} description ={description} open={open} onClose={handleClose} onSubmit={handleEdits} onDelete={onDelete} companyName={companyName} initialUrls={photoUrls} onPhotoEdit={handlePhotoEdits}/>
       </div>
       <CardActions disableSpacing>
         <IconButton
@@ -188,31 +195,32 @@ export default function BuildingCard(props) {
             </List>
         </CardContent>
         <CardContent>
-          <Typography paragraph>Units:</Typography>
-          		<Table size="small" aria-label="units" className={classes.table}>
+          		<Typography paragraph>Units:</Typography>
+              <Table size="small" aria-label="units" className={classes.table}>
 	                <TableHead>         
                       <TableRow>
-                        <TableCell align="left">Unit</TableCell>
-                        <TableCell align="left">Price</TableCell>
-                        <TableCell align="left">Sqft</TableCell>
-                        <TableCell align="left">BR</TableCell>
-                        <TableCell align="left">BA</TableCell>
-                        <TableCell align="left">Date Avail.</TableCell>
+                        <TableCell align="left"><div className={classes.tableCell}>Unit</div></TableCell>
+                        <TableCell align="left"><div className={classes.tableCell}>Price</div></TableCell>
+                        <TableCell align="left"><div className={classes.tableCell}>Sqft</div></TableCell>
+                        <TableCell align="left"><div className={classes.tableCell}>BR</div></TableCell>
+                        <TableCell align="left"><div className={classes.tableCell}>BA</div></TableCell>
+                        <TableCell align="left"><div className={classes.tableCell}>Date Avail.</div></TableCell>
                       </TableRow>
 	                </TableHead>
 	                <TableBody>
                       {units.map((apartment) => (          
-                      <TableRow key={apartment.unit}>
-                        <TableCell align="left">{apartment.unit}</TableCell>
-                        <TableCell align="left">{apartment.price}</TableCell>
-                        <TableCell align="left">{apartment.squareFeet}</TableCell>
-                        <TableCell align="left">{apartment.bedrooms}</TableCell>
-                        <TableCell align="left">{apartment.bathrooms}</TableCell>
-                        <TableCell align="left">{apartment.dateAvailable}</TableCell>
+                      <TableRow key={apartment.unit} onClick = {e => handleFloorplanOpen(apartment)}>
+                        <TableCell align="left"><div className={classes.tableCell}>{apartment.number}</div></TableCell>
+                        <TableCell align="left"><div className={classes.tableCell}>{apartment.price}</div></TableCell>
+                        <TableCell align="left"><div className={classes.tableCell}>{apartment.squareFeet}</div></TableCell>
+                        <TableCell align="left"><div className={classes.tableCell}>{apartment.bedrooms}</div></TableCell>
+                        <TableCell align="left"><div className={classes.tableCell}>{apartment.bathrooms}</div></TableCell>
+                        <TableCell align="left"><div className={classes.tableCell}>{apartment.dateAvailable}</div></TableCell>
                       </TableRow>
                       ))}
                 </TableBody>
 	            </Table>
+              <FloorplanDialog open = {floorplanOpen} onClose={handleFloorplanClose} apartment = {floorplanApartment}/>
         </CardContent>
       </Collapse>
     </Card>

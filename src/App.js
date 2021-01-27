@@ -1,11 +1,11 @@
 import React from "react";
 import Application from "./Components/Application";
-import UserProvider from "./Providers/UserProvider";
+import { AuthProvider } from "./Context";
 function App() {
   return (
-    <UserProvider>
+    <AuthProvider>
       <Application />
-    </UserProvider>
+    </AuthProvider>
   );
 }
 export default App;

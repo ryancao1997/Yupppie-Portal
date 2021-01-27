@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Container from '@material-ui/core/Container';
 import Box from '@material-ui/core/box';
 import { makeStyles } from '@material-ui/core/styles';
@@ -16,12 +16,13 @@ import ListItem from '@material-ui/core/ListItem';
 
 const useStyles = makeStyles((theme) => ({
   icon: {
-    color: 'black',
+    color: 'white',
   },
   button: {
     textTransform: 'none',
     fontSize : 20,
-    marginTop: -20
+    marginTop: -90,
+    marginLeft:-10
   },
   titleBar: {
     background:
@@ -46,7 +47,6 @@ const useStyles = makeStyles((theme) => ({
   },
   gridList: {
     flexWrap: 'nowrap',
-    // Promote the list into his own layer on Chrome. This cost memory but helps keeping high FPS.
     transform: 'translateZ(0)',
   }
 }));
@@ -69,9 +69,9 @@ const SortableList = SortableContainer(({items, handleDelete}) => {
         <SortableItem key={`item-${value}`} index={index} value={value} handleDelete={handleDelete}/>
         </Grid>
         <Grid item xs={12}>
-        <Button className={classes.button} onClick={() => handleDelete(value)}>
-            <div className={classes.icon}><DeleteIcon/></div>
-        </Button>
+            <IconButton className={classes.button} onClick={() => handleDelete(value)}>
+              <div className={classes.icon}><DeleteIcon/></div>
+            </IconButton>
         </Grid>
         </Grid>
         </ListItem>
@@ -83,11 +83,14 @@ const SortableList = SortableContainer(({items, handleDelete}) => {
 
 const EditPhotoComponent = props => {
   const classes = useStyles();
-  const { setFieldValue, Urls } = props;
+  const { setFieldValue, Urls, onDelete } = props;
   const [urls, setUrls] = useState(Urls);
+  useEffect(() => {
+      setUrls(Urls)
+  },[Urls]);
   const onSortEnd = ({oldIndex, newIndex}) => {
     setUrls(arrayMove(urls, oldIndex, newIndex))
-    setFieldValue("Urls", arrayMove(urls, oldIndex, newIndex))
+    setFieldValue("files", arrayMove(urls, oldIndex, newIndex))
   };
   function handleDelete(url) {
     let newUrls = []
@@ -98,7 +101,8 @@ const EditPhotoComponent = props => {
       }
     }
     setUrls(newUrls)
-    setFieldValue("Urls", newUrls)
+    onDelete(newUrls)
+    setFieldValue("files", newUrls)
   }
   return (
   <SortableList items={urls} onSortEnd={onSortEnd} handleDelete={handleDelete} axis={"x"}/>

@@ -1,7 +1,6 @@
 import React, { useContext, useState } from "react";
-import { UserContext } from "../Providers/UserProvider";
-import {auth} from "../firebase";
 import { Formik, Form, Field, FieldArray } from 'formik';
+import { useAuthState } from '../Context'
 import { Button } from '@material-ui/core';
 import { TextField } from 'formik-material-ui';
 import Container from '@material-ui/core/Container';
@@ -9,7 +8,6 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 import { makeStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import { Alert, AlertTitle } from '@material-ui/lab';
-import {firestore, storage} from "../firebase"
 import InputLabel from '@material-ui/core/InputLabel';
 import UploadComponent from './UploadComponent';
 import Dialog from '@material-ui/core/Dialog';
@@ -19,8 +17,9 @@ import DialogActions from '@material-ui/core/DialogActions';
 import AddIcon from '@material-ui/icons/Add';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormGroup from '@material-ui/core/FormGroup';
+import axios from 'axios';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
-import { v4 as uuidv4 } from 'uuid';
+import FormData from 'form-data'
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -71,18 +70,18 @@ const useStyles = makeStyles((theme) => ({
 
 const AddBuildingDialog = (props) => {
   var today = new Date();
+  const user = useAuthState();
   var dd = String(today.getDate()).padStart(2, '0');
   var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
   var yyyy = today.getFullYear()
   var datePlaceholder = yyyy + '-' + mm + '-' + dd;
-  const user = useContext(UserContext);
   const classes = useStyles();
   const [progress, setProgress] = useState(0);
   const [unitSubmitted, setUnitSubmitted] = useState(false);
   const [successMessage, setSuccessMessage] = useState(false);
   const [error, setError] = useState(null);
   const [files, setFiles] = useState([])
-  const { onSubmit, onClose, open, companyName } = props;
+  const { onSubmit, onClose, open, propertyManager } = props;
   const handleUpload = (uploadFiles) => {
     setFiles(uploadFiles)
   }
@@ -93,14 +92,14 @@ const AddBuildingDialog = (props) => {
   const handleSubmit = (values) => {
     console.log(values)
     try {
-      firestoreUpload(values); 
+      dbUpload(values); 
       setUnitSubmitted(true);
       setSuccessMessage(true);
     } catch (error) {
       setError("Error adding building to platform. Make sure inputs are valid");
     }
   };
-  async function firestoreUpload(values) {
+  async function dbUpload(values) {
     let doc = await submitHandler(values);
     if (!doc) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -112,79 +111,54 @@ const AddBuildingDialog = (props) => {
 
     const uploadFile = async (x) => {
       return new Promise((resolve, reject) => {
-        console.log(x.name)
-        const photoUpload = storage.ref(`images/${x.name}`).put(x)
-        photoUpload.on(
-          "state_changed",
-          snapshot => {
-            const progress = Math.round(
-              (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-            );
-            setProgress(progress);
-          },
-          error => {
-            console.log(error);
-            reject(error)
-          },
-          () => {
-            storage
-              .ref("images")
-              .child(x.name)
-              .getDownloadURL()
-              .then(url => {
-                console.log('url', url);
-                resolve(url);
-              });
-          }
-        );
-    });
+        let data = new FormData();
+        data.append('file', x, x.name);
+        console.log(data)
+        axios.post(`http://18.218.78.71:8080/images`,data,{ headers: {
+        'Content-Type': `multipart/form-data; boundary=${data._boundary}`,
+        'Authorization': `Bearer ${user.token}`
+      }})
+          .then(res => {
+        resolve(res.data.result.id)
+      })
+          .catch( e =>{
+            console.log(e)
+          })
+
+        });
   }
 
   const submitHandler = async (values) => {
-    console.log(values)
-    const urls = await Promise.all(values.files.map((fileArray) => uploadFile(fileArray)));
-    console.log('urls', urls)
-    let address = values.streetAddress+', '+values.city+', '+ values.state+', '+ values.zip
+    const images = await Promise.all(values.files.map((fileArray) => uploadFile(fileArray)));
+    let address_object = {
+            streetAddress: values.streetAddress,
+            zipCode: values.zipCode,
+            city: values.city,
+            state: values.state,
+          }
     var today = new Date();
     let doc = {
-      id: uuidv4(),
-      companyName: companyName,
-      buildingName: values.buildingName,
-      address: address,
+      propertyManager: user.user,
+      name: values.name,
+      address: address_object,
       description: values.description,
-      photoUrls: urls,
       amenities: values.amenities,
-      createdDate: today,
-      lastEdited: today
+      images: images,
+      units: values.units
     };
-    firestore.collection("buildings").doc(doc.id).set(doc);
-      var unitDocs = []
-      var x
-      for (x of values.units){
-        let unitDoc = {
-            id: uuidv4(),
-            companyName: companyName,
-            address: doc.address,
-            unit: x.unit,
-            price: x.price,
-            bedrooms: x.bedrooms,
-            bathrooms: x.bathrooms,
-            squareFeet: x.squareFeet,
-            dateAvailable: x.dateAvailable,
-            createdDate: today,
-            floorplanUrl: x.floorplanUrl
-          };
-        unitDocs.push(unitDoc)
-      }
-    console.log(unitDocs)
-    var y
-    for (y of unitDocs){
-      firestore.collection("buildings").doc(doc.id).collection("units").doc(y.id).set(y);
-    }
     console.log(doc)
+    axios.post(`http://18.218.78.71:8080/buildings`,doc, 
+      { headers: {
+        'Authorization': `Bearer ${user.token}`
+      }}
+      )
+      .then(res =>
+        {
+        console.log(res.data)
+        }
+        )
     return doc;
   };
-
   return (
     
     <Dialog onClose={handleClose} open={open} maxWidth = {'md'}>
@@ -193,22 +167,22 @@ const AddBuildingDialog = (props) => {
       <Formik
         onSubmit={(values) => handleSubmit(values)}
         initialValues={{
-          buildingName: "",
+          name: "",
           streetAddress: "",
-          zip: "",
+          zipCode: "",
           city: "",
           state: "",
           description: "",
           files: null,
           amenities: [],
           units: [
-            {unit: "",
+            {number: "",
             price: "",
             bedrooms: "",
             bathrooms: "",
             squareFeet: "",
-            dateAvailable: {datePlaceholder},
-            floorplanUrl: ""
+            dateAvailable: "",
+            floorPlan: ""
           }
           ]
         }}
@@ -223,9 +197,9 @@ const AddBuildingDialog = (props) => {
                     <Field
                       required
                       component={TextField}
-                      type="buildingName"
+                      type="name"
                       label="Building Name"
-                      name="buildingName"
+                      name="name"
                       fullWidth
                       variant="outlined"
                     />
@@ -267,9 +241,9 @@ const AddBuildingDialog = (props) => {
                     <Field
                       required
                       component={TextField}
-                      type="zip"
+                      type="zipCode"
                       label="Zip"
-                      name="zip"
+                      name="zipCode"
                       fullWidth
                       variant="outlined"
                     />
@@ -329,13 +303,13 @@ const AddBuildingDialog = (props) => {
                           className={classes.addUnit}
                           onClick={() =>
                             arrayHelpers.push({
-                              unit: "",
+                              number: "",
                               price: "",
                               bedrooms: "",
                               bathrooms: "",
                               squareFeet: "",
-                              dateAvailable: {datePlaceholder},
-                              floorplanUrl :""
+                              dateAvailable: "",
+                              floorPlan :""
                             })
                           }
                         >

@@ -1,6 +1,4 @@
 import React, { useState, useContext } from "react";
-import { auth } from "../firebase";
-import { UserContext } from "../Providers/UserProvider";
 import { Link } from "react-router-dom";
 import Button from '@material-ui/core/Button';
 import CssBaseline from '@material-ui/core/CssBaseline';
@@ -49,15 +47,6 @@ const PasswordReset = () => {
 
   const sendResetEmail = event => {
     event.preventDefault();
-    auth
-      .sendPasswordResetEmail(email)
-      .then(() => {
-          setEmailHasBeenSent(true);
-        setTimeout(() => {setEmailHasBeenSent(false)}, 3000);
-      })
-      .catch(() => {
-        setError("Error resetting password");
-      });
   };
   return (
     <div>

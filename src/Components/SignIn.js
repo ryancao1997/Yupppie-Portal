@@ -1,6 +1,5 @@
 import React, {useState, useContext} from "react";
 import { Link } from "react-router-dom";
-import {auth} from "../firebase"
 import Button from '@material-ui/core/Button';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import TextField from '@material-ui/core/TextField';
@@ -10,6 +9,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
 import Alert from '@material-ui/lab/Alert';
 import axios from 'axios'
+import { loginUser, useAuthState, useAuthDispatch } from '../Context/index' 
 
 
 const useStyles = makeStyles((theme) => ({
@@ -40,22 +40,18 @@ const SignIn = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
+    const dispatch  = useAuthDispatch()
     let link = `http://18.218.78.71:8080/property-managers/login`
     const signInWithEmailAndPasswordHandler = (event, email, password) => {
         event.preventDefault();
-        axios.get('http://18.218.78.71:8080/buildings')
-        .then(res => {
-          console.log(res)
-        })
         const user = {
-          email: email,
+          email: email.toLowerCase(),
           password: password
         }
-        console.log(user)
         axios.post(link,user)
-        .then(res =>
-          console.log(res.data)
-          )
+        .then(res => {
+          loginUser(dispatch , res.data)
+        })
         .catch(error => {
             setError("Wrong email or password");
             console.error("Error signing in with password and email", error);
@@ -120,6 +116,12 @@ const SignIn = () => {
             Sign In
           </Button>
         </form>
+          <Link
+                to="/Enquire"
+                className="my-2 text-blue-700 hover:text-blue-800 text-center block"
+              >
+                Click here to begin listing with us
+              </Link>
       </div>
     </Container>
     </div>

@@ -20,7 +20,6 @@ const UploadComponent = props => {
   const classes = useStyles();
   const { setFieldValue, onUpload } = props;
   const [files, setFiles] = useState([]);
-  console.log(files)
   const wait = time => new Promise((resolve) => setTimeout(resolve, time));
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: "image/*",

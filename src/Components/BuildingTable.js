@@ -17,7 +17,6 @@ import Typography from '@material-ui/core/Typography';
 import Paper from '@material-ui/core/Paper';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
-import {firestore, storage} from "../firebase"
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import DeleteIcon from '@material-ui/icons/Delete';
 
@@ -36,7 +35,6 @@ const useRowStyles = makeStyles({
 
 function BuildingTable(props) {
   const { onDelete, buildings, companyName, onPhotoChange } = props
-  console.log(buildings)
   return (
     <TableContainer component={Paper}>
       <Table aria-label="collapsible table">
@@ -77,31 +75,27 @@ function Row(props) {
     setOpen(false);
   };
   const { onDelete, building, companyName, onPhotoChange } = props
-  console.log(building)
   const [description, setDescription] = React.useState(building.description);
-  const [buildingName, setBuildingName] = React.useState(building.buildingName);
-  const [address, setAddress] = React.useState(building.address);
+  const [buildingName, setBuildingName] = React.useState(building.name);
+  const [address, setAddress] = React.useState(`${building.address.streetAddress}, ${building.address.city}, ${building.address.state}, ${building.address.zipCode}`);
   const [amenities, setAmenities] = React.useState(building.amenities);
-  const [photoUrls, setPhotoUrls] = React.useState(building.photoUrls);
+  const [photoUrls, setPhotoUrls] = React.useState(building.images);
   const [expanded, setExpanded] = React.useState(false);
-  const [units, setUnits] = useState([])
+  const [units, setUnits] = useState(building.units)
   useEffect(() => {
       setDescription(building.description)
-      setBuildingName(building.buildingName)
-      setAddress(building.address)
+      setBuildingName(building.name)
+      setAddress(`${building.address.streetAddress}, ${building.address.city}, ${building.address.state}, ${building.address.zipCode}`)
       setAmenities(building.amenities)
-      const unitRef = firestore.collection("buildings").doc(building.id).collection("units")
-      unitRef.get().then(snapshot => {
-        const data = snapshot.docs.map(doc => doc.data());
-        setUnits(data)
-      })
-  },[building]);
+      setUnits(building.units)
+      setPhotoUrls(building.images)
+        },[building.name]);
   function handlePhotoEdits(urls) {
     setPhotoUrls(urls)
     onPhotoChange(urls)
   }
   try {
-    var date = building.lastEdited.toDate()
+    var date = new Date()
   } catch {
     var date = building.lastEdited
   }
@@ -109,6 +103,7 @@ function Row(props) {
   var mm = String(date.getMonth() + 1).padStart(2, '0'); //January is 0!
   var yyyy = date.getFullYear()
   var lastEditedString = 'Last Edited: ' + yyyy + '-' + mm + '-' + dd;
+  console.log(units)
   function handleEdits(edits,initialIds) {
     setDescription(edits.description)
     setBuildingName(edits.buildingName)
@@ -140,8 +135,8 @@ function Row(props) {
 	            {expanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
 	          </IconButton>
 	        </TableCell>
-	        <TableCell>{building.buildingName}</TableCell>
-	        <TableCell>{building.address}</TableCell>
+	        <TableCell>{buildingName}</TableCell>
+	        <TableCell>{address}</TableCell>
 	        <TableCell>
 	        	<IconButton aria-label="settings" onClick={handleClickOpen}>
 		          <MoreVertIcon />
@@ -184,7 +179,7 @@ function Row(props) {
 	                <TableBody>
 	                    {units.map((apartment) => (          
 	                    <TableRow key={apartment.unit}>
-	                      <TableCell align="right">{apartment.unit}</TableCell>
+	                      <TableCell align="right">{apartment.number}</TableCell>
 	                      <TableCell align="right">{apartment.price}</TableCell>
 	                      <TableCell align="right">{apartment.squareFeet}</TableCell>
 	                      <TableCell align="right">{apartment.bedrooms}</TableCell>
@@ -199,7 +194,7 @@ function Row(props) {
 	          </Collapse>
 	        </TableCell>
 	      </TableRow>
-	      <EditBuildingDialog address = {address} buildingName = {buildingName} amenities = {amenities} units = {units} building={building} description ={description} open={open} onClose={handleClose} onSubmit={handleEdits} onDelete={onDelete} companyName={companyName} initialUrls={photoUrls} onPhotoEdit={handlePhotoEdits}/>
+	      <EditBuildingDialog address = {building.address} buildingName = {buildingName} amenities = {amenities} units = {units} building={building} description ={description} open={open} onClose={handleClose} onSubmit={handleEdits} onDelete={onDelete} companyName={companyName} initialUrls={photoUrls} onPhotoEdit={handlePhotoEdits}/>
 	    </React.Fragment>
 	    )
 	}

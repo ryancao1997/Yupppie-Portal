@@ -1,6 +1,4 @@
 import React, { useContext, useState, useEffect } from "react";
-import { UserContext } from "../Providers/UserProvider";
-import {auth} from "../firebase";
 import { Formik, Form, Field, FieldArray } from 'formik';
 import { Button } from '@material-ui/core';
 import { TextField } from 'formik-material-ui';
@@ -9,9 +7,7 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 import { makeStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import { Alert, AlertTitle } from '@material-ui/lab';
-import {firestore, storage} from "../firebase"
 import EditUploadComponent from './EditUploadComponent'
-import EditPhotoComponent from './EditPhotoComponent'
 import UnitInfo from './UnitInfo'
 import Dialog from '@material-ui/core/Dialog';
 import DialogTitle from '@material-ui/core/DialogTitle';
@@ -23,7 +19,8 @@ import Collapse from '@material-ui/core/Collapse';
 import clsx from 'clsx';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import CardActions from '@material-ui/core/CardActions';
-import { v4 as uuidv4 } from 'uuid';
+import { useAuthState } from '../Context'
+import axios from 'axios';
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -99,19 +96,18 @@ const useStyles = makeStyles((theme) => ({
 
 const EditBuildingDialog = (props) => {
   var today = new Date();
+  const user = useAuthState();
   var dd = String(today.getDate()).padStart(2, '0');
-  var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+  var mm = String(today.getMonth() + 1).padStart(2, '0');
   var yyyy = today.getFullYear()
   var datePlaceholder = yyyy + '-' + mm + '-' + dd;
   const [expanded, setExpanded] = React.useState(false);
   const handleExpandClick = () => {
     setExpanded(!expanded);
   };
-  const user = useContext(UserContext);
   const classes = useStyles();
   const [progress, setProgress] = useState(0);
   const { address, buildingName, amenities, onPhotoEdit, description, onDelete, onSubmit, units, building, onClose, open, companyName, initialUrls } = props;
-  const address_array = address.split(", ")
   const handleClose = () => {
     setSuccessMessage(false)
     onClose();
@@ -124,11 +120,10 @@ const EditBuildingDialog = (props) => {
   const [unitSubmitted, setUnitSubmitted] = useState(false);
   const [successMessage, setSuccessMessage] = useState(false);
   const [error, setError] = useState(null);
-  const [files, setFiles] = useState([])
-  const [Urls, setUrls] = useState(initialUrls)
-
-  const handleUpload = (urls) => {
-    setUrls(urls)
+  const [files, setFiles] = useState(initialUrls)
+  const handleUpload = (files) => {
+    setFiles(files)
+    console.log(files)
   }
   const handleDelete = () => {
     onDelete(building.id);
@@ -136,7 +131,7 @@ const EditBuildingDialog = (props) => {
   };
   const handleSubmit = (values) => {
     try {
-      firestoreUpload(values);
+      dbUpload(values);
       setUnitSubmitted(true);
       setSuccessMessage(true);
       onSubmit(values,initialIds)
@@ -144,32 +139,33 @@ const EditBuildingDialog = (props) => {
       setError("Error adding units to platform. Make sure inputs are valid");
     }
   };
-  const firestoreUpload = async (values) => {
-    var docs = []
-    let uploadAddress = values.streetAddress+', '+values.city+', '+ values.state+', '+ values.zip
-    var x
-    for (x of values.units){
-      console.log(x)
-      let doc = {
-          id: x.id,
-          companyName: companyName,
-          unit: x.unit,
-          price: x.price,
-          bedrooms: x.bedrooms,
-          bathrooms: x.bathrooms,
-          squareFeet: x.squareFeet,
-          dateAvailable: x.dateAvailable,
-          createdDate: x.createdDate,
-          floorplanUrl: x.floorplanUrl
-        };
-      docs.push(doc)
-    }
-  var y
-  for (y of docs){
-    firestore.collection("buildings").doc(building.id).collection("units").doc(y.id).set(y);
-  }
-  firestore.collection("buildings").doc(building.id).update({description: values.description, photoUrls: Urls, amenities: values.amenities, lastEdited:today, address: uploadAddress, buildingName: values.buildingName})
-  onPhotoEdit(Urls)
+  const dbUpload = async (values) => {
+    let address_object = {
+            streetAddress: values.streetAddress,
+            zipCode: values.zipCode,
+            city: values.city,
+            state: values.state,
+          }
+    let doc = {
+      propertyManager: user.user,
+      name: values.name,
+      address: address_object,
+      description: values.description,
+      amenities: values.amenities,
+      images: values.files,
+      units: values.units,
+    };
+    console.log('doc',doc)
+  axios.put(`http://18.218.78.71:8080/buildings/${building.id}`,doc, 
+      { headers: {
+        'Authorization': `Bearer ${user.token}`
+      }}
+      )
+  .then(res =>
+        console.log(res.data)
+        )
+  onPhotoEdit(values.files)
+  return doc
   }
   return (
     <Dialog onClose={handleClose} open={open} maxWidth = {'md'}>
@@ -177,16 +173,15 @@ const EditBuildingDialog = (props) => {
       <Formik
         onSubmit={(values) => handleSubmit(values)}
         initialValues={{
+          name: buildingName,
+          streetAddress: address.streetAddress,
+          zipCode: address.zipCode,
+          city: address.city,
+          state: address.state,
           description: description,
-          buildingName: buildingName,
-          streetAddress: address_array[0],
-          city: address_array[1],
-          state: address_array[2],
-          zip: address_array[3],
-          units: units,
-          files: [],
-          Urls: Urls,
+          files: files,
           amenities: amenities,
+          units: units
         }}
         render={({ values, setFieldValue, handleChange }) => (
           <Container component="main" className = {classes.container} maxWidth={'md'}>
@@ -199,9 +194,9 @@ const EditBuildingDialog = (props) => {
                     <Field
                       required
                       component={TextField}
-                      type="buildingName"
+                      type="name"
                       label="Building Name"
-                      name="buildingName"
+                      name="name"
                       fullWidth
                       variant="outlined"
                     />
@@ -243,9 +238,9 @@ const EditBuildingDialog = (props) => {
                     <Field
                       required
                       component={TextField}
-                      type="zip"
+                      type="zipCode"
                       label="Zip"
-                      name="zip"
+                      name="zipCode"
                       fullWidth
                       variant="outlined"
                     />
@@ -293,13 +288,7 @@ const EditBuildingDialog = (props) => {
                     </Button>
                   </CardActions>
                   <Collapse in={expanded} timeout="auto" unmountOnExit>
-                    <Grid item xs={12}>
-                    <EditPhotoComponent Urls = {Urls} name = "Urls" setFieldValue={setFieldValue}/>
-                    </Grid>
-                    <br/>
-                    <Grid item xs={12}>
-                    <EditUploadComponent name = "files" className = {classes.upload} setFieldValue={setFieldValue} onUpload={handleUpload} initialUrls = {Urls}/>
-                    </Grid>
+                    <EditUploadComponent name = "files" className = {classes.upload} setFieldValue={setFieldValue} onUpload={handleUpload} initialUrls = {initialUrls}/>
                   </Collapse>
                   </Grid>
                   <Grid item xs={12} className={classes.addUnit}>
@@ -321,19 +310,16 @@ const EditBuildingDialog = (props) => {
                         ))}
                         <Button
                           disableRipple
-                          
                           className={classes.addUnit}
                           onClick={() =>
                             arrayHelpers.push({
-                              id: uuidv4(),
-                              unit: "",
+                              number: "",
                               price: "",
                               bedrooms: "",
                               bathrooms: "",
                               squareFeet: "",
                               dateAvailable: {datePlaceholder},
-                              createdDate: {today},
-                              floorplanUrl: ""
+                              floorPlan: ""
                             })
                           }
                         >
