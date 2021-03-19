@@ -16,7 +16,6 @@ import Leads from './Leads'
 
 function Application() {
   const user = useAuthState();
-  console.log(user.user)
   return (
         (user.user) ?
         <Router>

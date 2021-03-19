@@ -264,16 +264,54 @@ const EditBuildingDialog = (props) => {
                   </Grid>
                   <Grid item xs={12}>
                     <div role = "group">
-                      <Field type="checkbox" name="amenities" value="Gym"/>
-                      Gym
-                      <Field type="checkbox"name="amenities" value="Pool"/>
-                      Pool
-                      <Field type="checkbox" name="amenities" value="Doorman"/>
-                      Doorman
-                      <Field type="checkbox" name="amenities" value="Dry Cleaning"/>
-                      Dry Cleaning
-                      <Field type="checkbox" name="amenities" value="Rooftop"/>
-                      Rooftop
+                      <Field type="checkbox" name="amenities" value="Hardwood Floors"/>
+                      Hardwood Floors
+                      <Field type="checkbox"name="amenities" value="Bike Racks"/>
+                      Bike Racks
+                      <Field type="checkbox" name="amenities" value="Microwave"/>
+                      Microwave
+                      <Field type="checkbox" name="amenities" value="Furnished"/>
+                      Furnished
+                      <Field type="checkbox" name="amenities" value="Elevator"/>
+                      Elevator
+                      <Field type="checkbox" name="amenities" value="Club Discount"/>
+                      Club Discount
+                      <Field type="checkbox" name="amenities" value="Extra Storage"/>
+                      Extra Storage
+                      <Field type="checkbox" name="amenities" value="Historic Building"/>
+                      Historic Building
+                      <Field type="checkbox" name="amenities" value="Controlled Access"/>
+                      Controlled Access
+                      <Field type="checkbox" name="amenities" value="Air Conditioner"/>
+                      Air Conditioner
+                      <Field type="checkbox" name="amenities" value="Public Transit"/>
+                      Public Transit
+                      <Field type="checkbox" name="amenities" value="Washer/Dryer"/>
+                      Washer/Dryer
+                      <Field type="checkbox" name="amenities" value="Maintenance"/>
+                      Maintenance
+                      <Field type="checkbox" name="amenities" value="Refrigerator"/>
+                      Refrigerator
+                      <Field type="checkbox" name="amenities" value="High Ceilings"/>
+                      High Ceilings
+                      <Field type="checkbox" name="amenities" value="Courtyard"/>
+                      Courtyard
+                      <Field type="checkbox" name="amenities" value="Dishwasher"/>
+                      Dishwasher
+                      <Field type="checkbox" name="amenities" value="Carpeting"/>
+                      Carpeting
+                      <Field type="checkbox" name="amenities" value="Wheelchair Access"/>
+                      Wheelchair Access
+                      <Field type="checkbox" name="amenities" value="Laundry Room"/>
+                      Laundry Room
+                      <Field type="checkbox" name="amenities" value="Parking"/>
+                      Parking
+                      <Field type="checkbox" name="amenities" value="Fireplace"/>
+                      Fireplace
+                      <Field type="checkbox" name="amenities" value="View"/>
+                      View
+                      <Field type="checkbox" name="amenities" value="Patio/Balcony"/>
+                      Patio/Balcony
                     </div>
                   </Grid>
                   <Grid item xs={12}>

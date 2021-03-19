@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Button from '@material-ui/core/Button';
 import CssBaseline from '@material-ui/core/CssBaseline';
-import TextField from '@material-ui/core/TextField';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
@@ -13,6 +12,8 @@ import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import InputLabel from '@material-ui/core/InputLabel';
 import FormControl from '@material-ui/core/FormControl';
+import { Formik, Form, Field, FieldArray } from 'formik';
+import { TextField } from 'formik-material-ui';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -24,7 +25,6 @@ const useStyles = makeStyles((theme) => ({
   },
   small: {
           width: '100%'
-
         },
   paper: {
     marginTop: theme.spacing(8),
@@ -44,54 +44,27 @@ const useStyles = makeStyles((theme) => ({
 
 const SignUp = () => {
   const classes = useStyles();
-  const [email, setEmail] = useState("");
-  const [backendService, setBackendService] = useState("");
-  const [numUnits, setNumUnits] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [companyWebsite, setCompanyWebsite] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [emailHasBeenSent, setEmailHasBeenSent] = useState(false);
   const [error, setError] = useState(null);
-  const sendEmail = async (email,companyName, phoneNumber) => {
+  const sendEmail = async (values) => {
       event.preventDefault();
+      console.log(values)
       try{
-        let payload = {
-          companyName: companyName,
-          phone: phoneNumber,
-          email: email,
-          companyWebsite: companyWebsite,
-          unitsManaged: numUnits,
-          managementSoftware: backendService
-        }
-        console.log(payload)
-        axios.post(`http://18.218.78.71:8080/contact`,payload)
+        axios.post(`http://18.218.78.71:8080/contact`,values)
         .then(res => {
           console.log("success")
+          setEmailHasBeenSent(true)
         })
         .catch(error => {
             console.log(error)
+            setError('Error. Make sure inputs are valid');
           });
-        setEmailHasBeenSent(true)
       }
       catch(error){
         setError('Error. Make sure inputs are valid');
       }
 
     };
-  const onChangeHandler = event => {
-    const { name, value } = event.currentTarget;
-    if (name === "userEmail") {
-      setEmail(value);
-    } else if (name === "companyWebsite") {
-      setCompanyWebsite(value);
-    } else if (name === "companyName") {
-      setCompanyName(value);
-    } else if (name === "phoneNumber") {
-      setPhoneNumber(value);
-    } else if (name === "numUnits") {
-      setNumUnits(value);
-    }
-  };
   return (
     <div>
     <center>
@@ -105,83 +78,89 @@ const SignUp = () => {
         </Typography>
         {error !== null && <Alert severity="error" onClose={() => {setError(null)}}>{error}</Alert>}
         {emailHasBeenSent && <Alert severity="success" onClose={() => {setEmailHasBeenSent(false)}}>We will reach out to you shortly.</Alert>}
-        <form className={classes.form} noValidate>
+        <Formik
+        onSubmit={(values) => sendEmail(values)}
+        initialValues={{
+          companyName: "",
+          companyWebsite: "",
+          email: "",
+          phone: "",
+          unitsManaged: "",
+          managementSoftware: ""
+        }}
+        render={({ values, setFieldValue, handleChange }) => (
+          <div>
+          <Form className={classes.form}>
           <Grid container spacing={2}>
             <Grid item xs={12}>
-              <TextField
+              <Field
                 autoComplete="companyName"
                 name="companyName"
                 variant="outlined"
+                component={TextField}
                 required
                 fullWidth
                 id="companyName"
                 label="Company Name"
-                value = {companyName}
-                onChange = {(event) => onChangeHandler(event)}
               />
             </Grid>
             <Grid item xs={12}>
-              <TextField
+              <Field
                 autoComplete="companyWebsite"
                 name="companyWebsite"
+                component={TextField}
                 variant="outlined"
-                required
                 fullWidth
                 id="companyWebsite"
                 label="Company Website"
-                value = {companyWebsite}
-                onChange = {(event) => onChangeHandler(event)}
               />
             </Grid>
             <Grid item xs={12}>
-              <TextField
+              <Field
                 variant="outlined"
                 required
                 fullWidth
                 id="userEmail"
+                component={TextField}
                 label="Email Address"
-                name="userEmail"
+                name="email"
                 autoComplete="email"
-                value = {email}
-                onChange = {(event) => onChangeHandler(event)}
               />
             </Grid>
             <Grid item xs={12}>
-              <TextField
+              <Field
                 autoComplete="phoneNumber"
-                name="phoneNumber"
+                name="phone"
                 variant="outlined"
+                type="number"
                 required
+                component={TextField}
                 fullWidth
                 id="phoneNumber"
                 label="Phone Number"
-                value = {phoneNumber}
-                onChange = {(event) => onChangeHandler(event)}
               />
             </Grid>
             <Grid item xs={5}>
-              <TextField
+              <Field
                 autoComplete="numUnits"
-                name="numUnits"
+                name="unitsManaged"
                 variant="outlined"
                 required
                 type = "number"
+                component={TextField}
                 fullWidth
                 id="numUnits"
                 label="Units Managed"
-                value = {numUnits}
-                onChange = {(event) => onChangeHandler(event)}
               />
             </Grid>
             <Grid item xs={7}>
             <FormControl className = {classes.small} variant="outlined" required>
               <InputLabel id="managementSoftware">Management Software</InputLabel>
               <Select
-                value = {backendService}
-                name= "backendService"
+                name= "managementSoftware"
                 labelId="managementSoftware"
                 label="Management Software"
-                onChange={(value) => setBackendService(value.target.value)}
+                onChange={handleChange}
               >
                 <MenuItem value="" disabled>
                   Management Software
@@ -189,7 +168,8 @@ const SignUp = () => {
                 <MenuItem value={"Yardi"}>Yardi</MenuItem>
                 <MenuItem value={"RealPage"}>RealPage</MenuItem>
                 <MenuItem value={"AppFolio"}>AppFolio</MenuItem>
-                <MenuItem value={""}>None</MenuItem>
+                <MenuItem value={"Other"}>Other</MenuItem>
+                <MenuItem value={"None"}>None</MenuItem>
               </Select>
             </FormControl>
             </Grid>
@@ -200,21 +180,21 @@ const SignUp = () => {
             variant="contained"
             color="primary"
             className={classes.submit}
-            onClick={event => {
-              sendEmail(email, companyName, phoneNumber);
-            }}
           >
             Enquire
           </Button>
+          </Form>
           <Grid container justify="flex-end">
             <Grid item>
               Already have an account?{" "}
               <Link to="/" className="text-blue-500 hover:text-blue-600">
                 Sign in here
-              </Link>{" "}
+              </Link>
             </Grid>
           </Grid>
-        </form>
+          </div>
+        )}
+      />
       </div>
     </Container>
     </div>

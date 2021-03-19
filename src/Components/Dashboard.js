@@ -45,6 +45,7 @@ const useStyles = makeStyles((theme) => ({
 
 function Dashboard() {
   const user = useAuthState();
+  console.log(user)
   const classes = useStyles();
   const [companyName, setCompanyName] = useState("test")
   const [buildings, setBuildings] = useState([])

@@ -57,7 +57,8 @@ function Leads() {
         'Authorization': `Bearer ${user.token}`
       }})
       .then(res => {
-        setLeads(res.data.data)})
+        setLeads(res.data.data)
+      })
       .catch(err => {
         console.log(err)
         setLeads([])
@@ -107,7 +108,7 @@ function Leads() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {leads.map((lead) => (
+          {leads.reverse().map((lead) => (
             <LeadRow lead={lead}/>
           ))}
         </TableBody>
@@ -147,12 +148,12 @@ function LeadRow(props) {
           <TableCell>{leadName}</TableCell>
           <TableCell>{lead.user.phone}</TableCell>
           <TableCell>{lead.user.email}</TableCell>
-          <TableCell>{buildingName}</TableCell>
-          <TableCell>{unit}</TableCell>
-          <TableCell>{createdDate}</TableCell>
+          <TableCell>{lead.propertyName}</TableCell>
+          <TableCell>{lead.unitEnquired}</TableCell>
+          <TableCell>{lead.createdDate}</TableCell>
         </TableRow>
         <TableRow>
-          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={9}>
             <Collapse in={expanded} timeout="auto" unmountOnExit>
               <Box margin={1}>
                 <CardContent>
