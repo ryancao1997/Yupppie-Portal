@@ -14,10 +14,10 @@ import { loginUser, useAuthState, useAuthDispatch } from '../Context/index'
 
 const useStyles = makeStyles((theme) => ({
   logo: {
-    height: 200,
-    width: 200,
-    marginBottom:-100,
-    marginTop: -30
+    height: 100,
+    width: 300,
+    marginBottom:-50,
+    marginTop: 10
   },
   paper: {
     marginTop: theme.spacing(8),

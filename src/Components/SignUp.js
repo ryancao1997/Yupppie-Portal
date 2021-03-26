@@ -18,10 +18,10 @@ import { TextField } from 'formik-material-ui';
 
 const useStyles = makeStyles((theme) => ({
   logo: {
-    height: 200,
-    width: 200,
-    marginBottom:-100,
-    marginTop: -30
+    height: 100,
+    width: 300,
+    marginBottom:-50,
+    marginTop: 10
   },
   small: {
           width: '100%'
@@ -74,7 +74,7 @@ const SignUp = () => {
       <CssBaseline />
       <div className={classes.paper}>
         <Typography component="h1" variant="h5">
-          List with Yuppie.
+          List with Nested.
         </Typography>
         {error !== null && <Alert severity="error" onClose={() => {setError(null)}}>{error}</Alert>}
         {emailHasBeenSent && <Alert severity="success" onClose={() => {setEmailHasBeenSent(false)}}>We will reach out to you shortly.</Alert>}

@@ -1,7 +1,6 @@
 import React, { useContext } from "react";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
-import Header from "./Header"
 import PasswordReset from "./PasswordReset";
 import Navbar from "./Navbar"
 import Dashboard from "./Dashboard"
@@ -20,7 +19,7 @@ function Application() {
         (user.user) ?
         <Router>
           <Navbar/>
-          <Header/>
+          
           <Route exact path="/">
               <Redirect to="/dashboard" />
           </Route>
